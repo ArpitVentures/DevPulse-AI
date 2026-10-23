@@ -215,9 +215,13 @@ No known vulnerable code pattern was detected in ${filename} by the configured s
 ### Finding: No detected vulnerabilities
 
 - **Severity:** LOW
+
 - **Evidence:** No configured vulnerable code pattern was detected.
+
 - **Security impact:** No impact was established by this scan.
+
 - **Recommended remediation:** Continue following secure coding practices and review security-sensitive logic manually.
+
 
 ## Recommended Actions
 
@@ -234,7 +238,9 @@ Automated analysis could not be completed for this file. Manual review is requir
 ## Analysis Status
 
 - **Severity:** REVIEW
+
 - **Result:** The scan was unable to produce a reliable analysis.
+
 - **Recommended action:** Retry the scan and review this file manually.`;
 }
 
@@ -281,6 +287,15 @@ async function analyzeFile(file: RepositoryFile): Promise<FileAnalysis> {
   try {
     const { content, isTruncated } = limitFileContent(file.content);
     const detections = runDetectors(file.name, content);
+    console.log(
+      '[DevPulse] Detector findings:',
+      file.name,
+      detections.map(({ ruleId, severity, lines }) => ({
+        ruleId,
+        severity,
+        lines,
+      })),
+    );
 
     if (detections.length === 0) {
       return {

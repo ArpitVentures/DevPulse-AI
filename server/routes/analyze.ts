@@ -66,7 +66,7 @@ router.post('/', async (req: Request, res: Response) => {
     const repositoryFiles = files as RepositoryFile[];
     const result = await analyzeRepository(repositoryFiles);
 
-    return res.status(200).json(result);
+    return res.status(result.success ? 200 : 400).json(result);
   } catch (error) {
     console.error(
       '[DevPulse] Repository analysis request failed:',

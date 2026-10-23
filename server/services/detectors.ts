@@ -32,9 +32,9 @@ export interface Detection {
 }
 
 const SOURCE_EXTENSIONS =
-  /\.(?:js|jsx|ts|tsx|mjs|cjs|py|java|php|rb|go|cs|sql)$/i;
+  /\.(?:js|jsx|ts|tsx|mts|cts|mjs|cjs|py|java|php|rb|go|cs|sql)$/i;
 
-const WEB_EXTENSIONS = /\.(?:js|jsx|ts|tsx|mjs|cjs|html|vue|svelte)$/i;
+const WEB_EXTENSIONS = /\.(?:js|jsx|ts|tsx|mts|cts|mjs|cjs|html|vue|svelte)$/i;
 
 const RULES: Rule[] = [
   {
@@ -60,7 +60,7 @@ const RULES: Rule[] = [
     remediation:
       'Store real credentials in environment variables or a secrets manager. Rotate any credential that has been exposed. Verify whether the detected value is a real secret.',
     pattern:
-      /\b(?:password|passwd|pwd|secret|api[_-]?key|access[_-]?token|auth[_-]?token|private[_-]?key)\b\s*[:=]\s*(['"`])(?!(?:\s*|your[_ -]|replace[_ -]|example|placeholder|changeme|process\.env|import\.meta\.env))[^'"`\r\n]{4,}\1/gi,
+      /\b(?:password|passwd|pwd|secret|api[_-]?key|access[_-]?token|auth[_-]?token|private[_-]?key)\b\s*[:=]\s*(['"`])(?!\s*(?:your[_ -]|replace[_ -]|example|placeholder|changeme|process\.env|import\.meta\.env)\b)[^'"`\r\n]{4,}\1/gi,
     appliesTo: (filename) => SOURCE_EXTENSIONS.test(filename),
   },
   {

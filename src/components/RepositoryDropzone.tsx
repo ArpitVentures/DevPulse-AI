@@ -29,7 +29,6 @@ interface RepositoryPayloadFile {
   content: string;
 }
 
-
 interface DirectoryEntryLike {
   isFile: boolean;
   isDirectory: boolean;
@@ -49,7 +48,6 @@ interface DirectoryEntryLike {
 type DataTransferItemWithEntry = DataTransferItem & {
   webkitGetAsEntry?: () => unknown;
 };
-
 
 const MAX_FILES = 20;
 const MAX_FILE_CHARACTERS = 30_000;
@@ -114,6 +112,10 @@ const SUPPORTED_EXTENSIONS = [
   '.java',
   '.go',
   '.rs',
+  '.swift',
+  '.kt',
+  '.kts',
+  '.scala',
   '.php',
   '.rb',
   '.cs',
