@@ -1,5 +1,4 @@
 import { researchSecurityIssue } from './tavily';
-import { explainFindings } from './nebius';
 import {
   runDetectors,
   maxSeverity,
@@ -19,6 +18,7 @@ export interface FileAnalysis {
   filename: string;
   analysis: string;
   severity: Severity | 'REVIEW';
+  findings: Detection[];
   research?: {
     query: string;
     answer: string;
@@ -254,66 +254,29 @@ function buildResearchQuery(filename: string, detections: Detection[]): string {
 Detected patterns:
 ${items}
 
-Find relevant official security advisories, CWE or OWASP guidance, and remediation best practices where applicable. Do not invent CVEs or claim a CVE applies without supporting evidence.`;
-}
-
-function formatDetectorSummary(detections: Detection[]): string {
-  return detections
-    .map(
-      (detection) =>
-        `- ${detection.title} | Category: ${detection.category} | Severity: ${detection.severity} | Lines: ${detection.lines.join(', ')} | Evidence: ${detection.snippet}`,
-    )
-    .join('\n');
-}
-
-function appendAdditionalObservations(
-  report: string,
-  observations: string,
-): string {
-  const trimmed = observations.trim();
-
-  if (!trimmed) {
-    return report;
-  }
-
-  return `${report.trim()}
-
-## Additional Observations
-
-${trimmed}`;
+Find relevant official security advisories, CWE or OWASP guidance, and remediation best practices where applicable. Do not invent CVEs or claim a CVE applies without supporting evidence. Explain the general severity of the vulnerability only when supported by reliable sources. Do not assign or change DevPulse's severity rating; the deterministic scanner's severity is authoritative. Distinguish general vulnerability severity from the severity of this specific finding, which depends on context and exploitability.`;
 }
 
 async function analyzeFile(file: RepositoryFile): Promise<FileAnalysis> {
   try {
     const { content, isTruncated } = limitFileContent(file.content);
     const detections = runDetectors(file.name, content);
-    console.log(
-      '[DevPulse] Detector findings:',
-      file.name,
-      detections.map(({ ruleId, severity, lines }) => ({
-        ruleId,
-        severity,
-        lines,
-      })),
-    );
 
     if (detections.length === 0) {
       return {
         filename: file.name,
         severity: 'LOW',
         analysis: buildCleanReport(file.name, isTruncated),
+        findings: [],
       };
     }
 
     const severity = maxSeverity(detections) ?? 'LOW';
     const analysis = buildFindingsReport(file.name, detections, isTruncated);
 
-    const detectorSummary = formatDetectorSummary(detections);
-
-    const [researchResult, explanationResult] = await Promise.allSettled([
+    const researchResult = await Promise.allSettled([
       researchSecurityIssue(buildResearchQuery(file.name, detections)),
-      explainFindings(file.name, content, detectorSummary),
-    ]);
+    ]).then(([result]) => result);
 
     let research: FileAnalysis['research'];
 
@@ -337,26 +300,11 @@ async function analyzeFile(file: RepositoryFile): Promise<FileAnalysis> {
       );
     }
 
-    let finalAnalysis = analysis;
-
-    if (explanationResult.status === 'fulfilled') {
-      finalAnalysis = appendAdditionalObservations(
-        analysis,
-        explanationResult.value,
-      );
-    } else {
-      console.error(
-        `[DevPulse] Nemotron explanation failed for ${file.name}:`,
-        explanationResult.reason instanceof Error
-          ? explanationResult.reason.message
-          : explanationResult.reason,
-      );
-    }
-
     return {
       filename: file.name,
       severity,
-      analysis: finalAnalysis,
+      analysis,
+      findings: detections,
       ...(research ? { research } : {}),
     };
   } catch (error) {
@@ -369,6 +317,7 @@ async function analyzeFile(file: RepositoryFile): Promise<FileAnalysis> {
       filename: file.name,
       severity: 'REVIEW',
       analysis: buildFailedReport(),
+      findings: [],
     };
   }
 }

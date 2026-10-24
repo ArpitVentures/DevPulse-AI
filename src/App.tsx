@@ -49,22 +49,27 @@ function App() {
   const severityCounts = analysisResult
     ? analysisResult.results.reduce(
         (counts, result) => {
-          switch (result.severity) {
-            case 'CRITICAL':
-              counts.critical += 1;
-              break;
-            case 'HIGH':
-              counts.high += 1;
-              break;
-            case 'MEDIUM':
-              counts.medium += 1;
-              break;
-            case 'LOW':
-              counts.low += 1;
-              break;
-            default:
-              counts.review += 1;
+          if (result.severity === 'REVIEW' && result.findings.length === 0) {
+            counts.review += 1;
           }
+
+          for (const finding of result.findings) {
+            switch (finding.severity) {
+              case 'CRITICAL':
+                counts.critical += 1;
+                break;
+              case 'HIGH':
+                counts.high += 1;
+                break;
+              case 'MEDIUM':
+                counts.medium += 1;
+                break;
+              case 'LOW':
+                counts.low += 1;
+                break;
+            }
+          }
+
           return counts;
         },
         {
@@ -286,6 +291,16 @@ function App() {
                                 </span>
 
                                 <span className="tavily-badge">TAVILY</span>
+
+                                <p className="research-disclaimer">
+                                  External security research and remediation
+                                  guidance. Severity ratings shown in the
+                                  Security Report are determined by DevPulse's
+                                  static analysis engine; external sources
+                                  provide additional context and do not override
+                                  those ratings.
+                                </p>
+
                               </div>
 
                               {result.research.answer && (

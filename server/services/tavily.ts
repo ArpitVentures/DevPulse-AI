@@ -49,7 +49,7 @@ export async function researchSecurityIssue(
         search_depth: 'advanced',
         topic: 'general',
         max_results: 5,
-        include_answer: true,
+        include_answer: false,
         include_raw_content: false,
       }),
       signal: controller.signal,
