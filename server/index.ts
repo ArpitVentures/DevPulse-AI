@@ -1,4 +1,6 @@
 import 'dotenv/config';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import express from 'express';
 import cors from 'cors';
 import { explainFindings } from './services/nebius';
@@ -6,6 +8,9 @@ import { researchSecurityIssue } from './services/tavily';
 import analyzeRouter from './routes/analyze';
 
 const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const PORT = Number(process.env.PORT) || 5000;
 
 const allowedOrigins = (
@@ -81,6 +86,16 @@ if (process.env.NODE_ENV !== 'production') {
         message: 'Tavily connectivity test failed.',
       });
     }
+  });
+}
+
+if (process.env.NODE_ENV === 'production') {
+  const clientDistPath = path.resolve(__dirname, '../dist');
+
+  app.use(express.static(clientDistPath));
+
+  app.get('/{*path}', (_req, res) => {
+    res.sendFile(path.join(clientDistPath, 'index.html'));
   });
 }
 
