@@ -5,7 +5,6 @@ export type Category =
   | 'hardcoded_secret'
   | 'log_sensitive'
   | 'cors_wildcard'
-  | 'caret_range'
   | 'code_execution'
   | 'unsafe_dom';
 
@@ -138,19 +137,6 @@ const RULES: Rule[] = [
       'Configure an explicit allowlist of trusted origins where appropriate. Review credential settings and actual API exposure.',
     pattern: /\bcors\s*\(\s*\)|\borigin\s*:\s*['"`]\*['"`]/gi,
     appliesTo: (filename) => SOURCE_EXTENSIONS.test(filename),
-  },
-  {
-    id: 'caret-range',
-    category: 'caret_range',
-    severity: 'LOW',
-    title: 'Caret dependency version range',
-    impact:
-      'Caret ranges permit compatible dependency updates, so installations may resolve to different versions over time. A caret range alone is not proof of a vulnerable dependency.',
-    remediation:
-      'Commit and maintain a lockfile, audit dependencies regularly, and pin versions where required by policy.',
-    pattern: /"[^"\r\n]+"\s*:\s*"\^\d[^"\r\n]*"/g,
-    appliesTo: (filename) =>
-      /(^|\/)package\.json$/i.test(filename.replace(/\\/g, '/')),
   },
 ];
 

@@ -270,6 +270,19 @@ function App() {
               {analysisResult.results.map((result, index) => {
                 const isExpanded = expandedFiles.has(result.filename);
 
+                const hasDependencyVulnerabilities =
+                  result.dependencyAudit?.success === true &&
+                  result.dependencyAudit.dependencies.some(
+                    (dependency) => dependency.vulnerabilities.length > 0,
+                  );
+
+                const displaySeverity =
+                  result.severity !== 'REVIEW' &&
+                  result.findings.length === 0 &&
+                  !hasDependencyVulnerabilities
+                    ? 'CLEAN'
+                    : result.severity;
+
                 return (
                   <motion.article
                     className={`security-result-card ${
@@ -291,9 +304,9 @@ function App() {
                       </div>
 
                       <span
-                        className={`severity severity-${result.severity.toLowerCase()}`}
+                        className={`severity severity-${displaySeverity.toLowerCase()}`}
                       >
-                        {result.severity}
+                        {displaySeverity}
                       </span>
                     </div>
 

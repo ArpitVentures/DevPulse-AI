@@ -207,7 +207,10 @@ function limitFileContent(content: string): {
   };
 }
 
-function buildCleanReport(filename: string, isTruncated = false): string {
+export function buildCleanReport(
+  filename: string,
+  isTruncated = false,
+): string {
   const truncationNotice = isTruncated
     ? '\n\n> **Notice:** This file exceeded the 200,000-character limit. Only the initial portion was analyzed.'
     : '';
@@ -216,23 +219,16 @@ function buildCleanReport(filename: string, isTruncated = false): string {
 
 ## Executive Summary
 
-No known vulnerable code pattern was detected in ${filename} by the configured static rules. This does not guarantee that the file is secure.${truncationNotice}
+No known vulnerable code pattern was detected in \`${filename}\`
+by the configured static rules. This does not guarantee that the file is secure.${truncationNotice}
 
 ## Findings
 
-### Finding: No detected vulnerabilities
-
-- **Severity:** LOW
-
-- **Evidence:** No configured vulnerable code pattern was detected.
-
-- **Security impact:** No impact was established by this scan.
-
-- **Recommended remediation:** Continue following secure coding practices and review security-sensitive logic manually.
+No findings detected.
 
 ## Recommended Actions
 
-Review authentication, authorization, input validation, dependencies, and other security-sensitive behavior as appropriate.`;
+Continue following secure coding practices and review security-sensitive logic manually.`;
 }
 
 function buildFailedReport(): string {
@@ -312,25 +308,33 @@ async function analyzeFile(file: RepositoryFile): Promise<FileAnalysis> {
           (dependency) => dependency.vulnerabilities.length > 0,
         );
 
-        const dependencySeverity = vulnerableDependencies
-          .flatMap((dependency) => dependency.vulnerabilities)
-          .reduce<DependencySeverity>(
+        const allVulnerabilities = vulnerableDependencies.flatMap(
+          (dep) => dep.vulnerabilities,
+        );
+
+        const dependencySeverity =
+          allVulnerabilities.reduce<DependencySeverity>(
             (highest, vulnerability) =>
               severityRank[vulnerability.severity] > severityRank[highest]
                 ? vulnerability.severity
                 : highest,
-            'LOW',
+            'UNKNOWN',
           );
 
         const finalSeverity =
-          dependencySeverity === 'UNKNOWN' ? 'HIGH' : dependencySeverity;
+          dependencySeverity === 'UNKNOWN' ? 'REVIEW' : dependencySeverity;
+
+        const uniqueAdvisoriesCount = new Set(
+          allVulnerabilities.map((v) => v.id),
+        ).size;
 
         const dependencySummary = vulnerableDependencies
           .map((dependency) => {
             return dependency.vulnerabilities
               .map(
                 (vulnerability) =>
-                  `- **${vulnerability.id}** — ${vulnerability.severity}: ${vulnerability.summary}\n` +
+                  `- **${vulnerability.id}** — Severity: ${vulnerability.severity}\n` +
+                  `  - Summary: ${vulnerability.summary}\n` +
                   `  - Package: ${dependency.name}@${dependency.version}\n` +
                   `  - Fixed versions: ${vulnerability.fixedVersions.join(', ') || 'Check advisory'}`,
               )
@@ -338,16 +342,75 @@ async function analyzeFile(file: RepositoryFile): Promise<FileAnalysis> {
           })
           .join('\n\n');
 
+        const depResearchQuery = `Research security guidance and CVE advisories for npm dependencies: ${vulnerableDependencies
+          .map(
+            (d) =>
+              `${d.name}@${d.version} (${d.vulnerabilities.map((v) => v.id).join(', ')})`,
+          )
+          .join(', ')}`;
+
+        const depExplanationFindings = vulnerableDependencies
+          .flatMap((d) =>
+            d.vulnerabilities.map(
+              (v) =>
+                `- Vulnerable dependency: ${d.name}@${d.version} (${v.id}, ${v.severity}): ${v.summary}. Fixed in: ${v.fixedVersions.join(', ') || 'latest'}`,
+            ),
+          )
+          .join('\n');
+
+        const [researchResult, explanationResult] = await Promise.allSettled([
+          researchSecurityIssue(depResearchQuery),
+          explainFindings(
+            file.name,
+            file.content.slice(0, 5000),
+            depExplanationFindings,
+          ),
+        ]);
+
+        let research: FileAnalysis['research'];
+        if (researchResult.status === 'fulfilled') {
+          const result = researchResult.value;
+          research = {
+            query: result.query,
+            answer: result.answer,
+            sources: result.sources.map((source) => ({
+              title: source.title,
+              url: source.url,
+            })),
+          };
+        } else {
+          research = {
+            query: depResearchQuery,
+            answer: `Live research unavailable: ${
+              researchResult.reason instanceof Error
+                ? researchResult.reason.message
+                : 'Service unavailable'
+            }`,
+            sources: [],
+          };
+        }
+
+        const aiExplanation =
+          explanationResult.status === 'fulfilled'
+            ? explanationResult.value
+            : `AI Explanation Unavailable: ${
+                explanationResult.reason instanceof Error
+                  ? explanationResult.reason.message
+                  : 'Service unavailable'
+              }`;
+
         return {
           filename: file.name,
           severity: finalSeverity,
           analysis:
             `# Dependency Security Report\n\n` +
-            `Found ${dependencyAudit.vulnerabilitiesFound} known vulnerability/vulnerabilities ` +
-            `across ${dependencyAudit.vulnerableDependencies} dependencies.\n\n` +
+            `Found **${dependencyAudit.vulnerabilitiesFound} total vulnerability instance(s)** ` +
+            `(${uniqueAdvisoriesCount} unique advisory IDs) across **${dependencyAudit.vulnerableDependencies} vulnerable package(s)**.\n\n` +
             `## Vulnerabilities\n\n${dependencySummary}`,
           findings: [],
           dependencyAudit,
+          research,
+          aiExplanation,
         };
       }
 
@@ -397,12 +460,26 @@ async function analyzeFile(file: RepositoryFile): Promise<FileAnalysis> {
           ? researchResult.reason.message
           : researchResult.reason,
       );
+
+      research = {
+        query: buildResearchQuery(file.name, detections),
+        answer: `Live research unavailable: ${
+          researchResult.reason instanceof Error
+            ? researchResult.reason.message
+            : 'Service request failed'
+        }`,
+        sources: [],
+      };
     }
 
     const aiExplanation =
       explanationResult.status === 'fulfilled'
         ? explanationResult.value
-        : undefined;
+        : `AI Explanation Unavailable: ${
+            explanationResult.reason instanceof Error
+              ? explanationResult.reason.message
+              : 'Service request failed'
+          }`;
 
     if (explanationResult.status === 'rejected') {
       console.error(
@@ -419,8 +496,8 @@ async function analyzeFile(file: RepositoryFile): Promise<FileAnalysis> {
       analysis,
       findings: detections,
       ...(dependencyAudit ? { dependencyAudit } : {}),
-      ...(research ? { research } : {}),
-      ...(aiExplanation ? { aiExplanation } : {}),
+      research,
+      aiExplanation,
     };
   } catch (error) {
     console.error(
