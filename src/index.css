@@ -6,6 +6,10 @@
     --graphite-hover: #282b36;
     --lime-spark: #b6ff2e;
     --dragonfruit: #ff4696;
+    --bg: #211333;
+    --text: #ffffff;
+    --accent: #b6ff2e;
+    --danger: #ff4696;
 
     --font-heading: 'Space Grotesk', sans-serif;
     --font-body: 'Inter', sans-serif;
@@ -29,6 +33,7 @@ body {
     min-height: 100vh;
     font-family: var(--font-body);
     background: var(--night-violet);
+    color: var(--text);
 }
 
 button {
@@ -41,16 +46,12 @@ button:focus-visible {
     outline-offset: 3px;
 }
 
-/* App Layout */
-
 .app {
     position: relative;
     min-height: 100vh;
     background: var(--night-violet);
     overflow: clip;
 }
-
-/* Header Container */
 
 .app-header {
     width: 100%;
@@ -61,6 +62,8 @@ button:focus-visible {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
     padding: 26px 48px 12px;
     background: transparent;
     border-bottom: none;
@@ -70,7 +73,7 @@ button:focus-visible {
     margin: 0;
     font-family: var(--font-heading);
     font-weight: 700;
-    color: var(--lime-spark);
+    color: var(--text);
     font-size: 1.45rem;
     letter-spacing: -0.04em;
 }
@@ -81,8 +84,6 @@ button:focus-visible {
     font-size: 0.8rem;
     font-family: var(--font-body);
 }
-
-/* Dynamic Status Badge */
 
 .system-status {
     display: flex;
@@ -132,8 +133,6 @@ button:focus-visible {
     }
 }
 
-/* Main Content Container */
-
 .main-content {
     position: relative;
     z-index: 10;
@@ -147,7 +146,15 @@ button:focus-visible {
     z-index: 1;
 }
 
+.hero-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
+    gap: 48px;
+    align-items: start;
+}
+
 .hero {
+    min-width: 0;
     margin-top: 8px;
 }
 
@@ -175,7 +182,8 @@ button:focus-visible {
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    font-size: clamp(3rem, 5.4vw, 5.4rem);
+    font-size: clamp(2rem, 8vw, 2.8rem);
+    overflow-wrap: anywhere;
     line-height: 0.98;
     letter-spacing: -0.055em;
     font-weight: 700;
@@ -190,8 +198,6 @@ button:focus-visible {
     line-height: 1.7;
 }
 
-/* Interactive Repository Dropzone */
-
 .repository-dropzone {
     position: relative;
     isolation: isolate;
@@ -205,7 +211,6 @@ button:focus-visible {
     align-items: center;
     justify-content: center;
     text-align: center;
-
     background:
             linear-gradient(
                     145deg,
@@ -217,14 +222,11 @@ button:focus-visible {
                     rgba(182, 255, 46, 0.32),
                     rgba(255, 70, 150, 0.24)
             ) border-box;
-
     border: 1px solid transparent;
     border-radius: 18px;
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
-
     box-shadow: 0 12px 36px rgba(0, 0, 0, 0.14);
-
     transition:
             border-radius 180ms ease,
             box-shadow 220ms ease,
@@ -244,11 +246,9 @@ button:focus-visible {
                     rgba(182, 255, 46, 0.72),
                     rgba(255, 70, 150, 0.42)
             ) border-box;
-
     box-shadow:
             0 16px 40px rgba(0, 0, 0, 0.2),
             0 0 24px rgba(182, 255, 46, 0.055);
-
     transform: translateY(-2px);
 }
 
@@ -264,13 +264,10 @@ button:focus-visible {
                     var(--lime-spark),
                     rgba(182, 255, 46, 0.55)
             ) border-box;
-
     border: 1px dashed var(--lime-spark);
-
     box-shadow:
             0 0 0 3px rgba(182, 255, 46, 0.09),
             0 0 32px rgba(182, 255, 46, 0.12);
-
     transform: translateY(-2px);
 }
 
@@ -300,8 +297,6 @@ button:focus-visible {
     border-color: rgba(182, 255, 46, 0.35);
     animation: floatIcon 1.8s ease-in-out infinite;
 }
-
-/* Upload Icon Floating Animation */
 
 .dropzone-icon {
     width: 60px;
@@ -404,9 +399,8 @@ button:focus-visible {
     transform: translateY(-2px);
 }
 
-/* Repository Selection Actions */
-
-.repository-dropzone .change-repository-button {
+.repository-dropzone .change-repository-button,
+.change-repository-button {
     padding: 8px 12px;
     border: 1px solid rgba(245, 245, 245, 0.12);
     border-radius: 8px;
@@ -422,7 +416,8 @@ button:focus-visible {
             transform 180ms ease;
 }
 
-.repository-dropzone .change-repository-button:hover {
+.repository-dropzone .change-repository-button:hover,
+.change-repository-button:hover {
     color: var(--lime-spark);
     border-color: rgba(182, 255, 46, 0.38);
     background: rgba(182, 255, 46, 0.055);
@@ -433,8 +428,6 @@ button:focus-visible {
     cursor: not-allowed;
     opacity: 0.55;
 }
-
-/* Selected Repository State & Actions */
 
 .repository-actions {
     display: flex;
@@ -492,23 +485,6 @@ button:focus-visible {
     box-shadow: 0 8px 24px rgba(182, 255, 46, 0.2);
 }
 
-.change-repository-button {
-    padding: 5px 8px;
-    border: 0;
-    background: transparent;
-    color: rgba(245, 245, 245, 0.45);
-    font-family: var(--font-body);
-    font-size: 0.78rem;
-    transition: color 0.25s ease, transform 0.25s ease;
-}
-
-.change-repository-button:hover {
-    color: var(--lime-spark);
-    transform: translateY(-1px);
-}
-
-/* Analysis State & Spinner */
-
 .analysis-status {
     display: inline-flex;
     align-items: center;
@@ -529,8 +505,6 @@ button:focus-visible {
     animation: pulseDot 1.2s ease-in-out infinite;
 }
 
-/* Error State (Dragonfruit) */
-
 .analysis-error {
     margin-top: 18px;
     max-width: 520px;
@@ -542,8 +516,6 @@ button:focus-visible {
     font-size: 0.82rem;
     line-height: 1.5;
 }
-
-/* Security Results Dashboard */
 
 .security-results {
     margin-top: 90px;
@@ -817,6 +789,13 @@ button:focus-visible {
     letter-spacing: 0.1em;
 }
 
+.research-disclaimer {
+    margin: 0.75rem 0 1rem;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    opacity: 0.75;
+}
+
 .research-answer {
     margin: 12px 0 20px;
     color: rgba(245, 245, 245, 0.72);
@@ -852,8 +831,6 @@ button:focus-visible {
     border-color: rgba(182, 255, 46, 0.3);
     background: rgba(182, 255, 46, 0.05);
 }
-
-/* Severity Summary Dashboard */
 
 .severity-summary {
     display: grid;
@@ -941,8 +918,6 @@ button:focus-visible {
     color: #e9d5ff;
 }
 
-/* Report Accordion */
-
 .report-toggle {
     width: 100%;
     margin-top: 18px;
@@ -983,18 +958,15 @@ button:focus-visible {
     border-color 0.25s ease;
 }
 
-.report-toggle:hover .report-toggle-icon {
+.report-toggle:hover .report-toggle-icon,
+.report-toggle-icon.open {
     color: var(--lime-spark);
     border-color: rgba(182, 255, 46, 0.3);
 }
 
 .report-toggle-icon.open {
     transform: rotate(180deg);
-    color: var(--lime-spark);
-    border-color: rgba(182, 255, 46, 0.3);
 }
-
-/* Security Background Environment */
 
 .security-environment {
     position: absolute;
@@ -1220,8 +1192,6 @@ button:focus-visible {
     color: rgba(182, 255, 46, 0.85);
 }
 
-/* Security Spatial Composition */
-
 .security-engine {
     position: absolute;
     top: 47%;
@@ -1439,9 +1409,73 @@ button:focus-visible {
     background: rgba(35, 38, 47, 0.78);
 }
 
-/* Mobile Responsiveness */
+.hero-engine {
+    position: relative;
+    min-height: 0;
+    padding: 8px 0 0;
+}
+
+.hero-engine .security-environment {
+    position: relative;
+    inset: auto;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+    background: none;
+}
+
+.hero-engine .security-grid,
+.hero-engine .ambient-orb,
+.hero-engine .scan-line,
+.hero-engine .scan-sweep,
+.hero-engine .environment-glow {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+}
+
+.hero-engine .ambient-orb,
+.hero-engine .environment-glow {
+    pointer-events: none;
+}
+
+.hero-engine .environment-telemetry,
+.hero-engine .environment-rail,
+.hero-engine .environment-corner {
+    display: none;
+}
+
+.hero-engine .security-engine {
+    position: relative;
+    top: auto;
+    right: auto;
+    width: 100%;
+    transform: none;
+    z-index: 2;
+}
+
+@media (min-width: 701px) and (max-width: 1100px) {
+    .security-engine {
+        position: relative;
+        top: auto;
+        right: auto;
+        width: 100%;
+        max-width: 560px;
+        margin: 40px 0 0 auto;
+        transform: none;
+    }
+
+    .main-content h2 {
+        max-width: 100%;
+        font-size: clamp(2.8rem, 6vw, 4.2rem);
+    }
+}
 
 @media (max-width: 900px) {
+    .hero-layout {
+        grid-template-columns: 1fr;
+    }
+
     .security-engine {
         width: min(560px, calc(100% - 40px));
         right: 20px;
@@ -1449,6 +1483,12 @@ button:focus-visible {
 }
 
 @media (max-width: 700px) {
+    .main-content h2 {
+        max-width: 100%;
+        font-size: clamp(2rem, 8vw, 2.8rem);
+        overflow-wrap: anywhere;
+    }
+
     .security-engine {
         width: calc(100% - 40px);
         right: 20px;
@@ -1549,8 +1589,6 @@ button:focus-visible {
     }
 }
 
-/* Reduced Motion */
-
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -1561,9 +1599,41 @@ button:focus-visible {
     }
 }
 
-.research-disclaimer {
-    margin: 0.75rem 0 1rem;
-    font-size: 0.8rem;
-    line-height: 1.5;
-    opacity: 0.75;
+@media (min-width: 701px) and (max-width: 800px) {
+    .app-header {
+        padding-left: 32px;
+        padding-right: 32px;
+    }
+
+    .main-content {
+        padding-left: 32px;
+        padding-right: 32px;
+    }
+
+    .main-content h2 {
+        font-size: clamp(2.4rem, 5.5vw, 2.8rem);
+        line-height: 1.05;
+    }
+
+    .repository-dropzone {
+        max-width: 100%;
+    }
+
+    .security-engine {
+        width: 100%;
+        max-width: 100%;
+        margin: 32px 0 0;
+    }
+}
+
+@media (min-width: 701px) and (max-width: 1050px) {
+    .severity-summary {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 380px) {
+    .severity-summary {
+        grid-template-columns: 1fr;
+    }
 }

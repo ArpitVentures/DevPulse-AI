@@ -3,8 +3,10 @@ import { analyzeRepository, type RepositoryFile } from '../services/analyzer';
 
 const router = Router();
 
-const MAX_FILES = 20;
-const MAX_FILE_CHARACTERS = 30_000;
+const MAX_FILES = 500;
+const MAX_FILE_CHARACTERS = 200_000;
+const MAX_PACKAGE_LOCK_CHARACTERS = 5_000_000;
+const MAX_TOTAL_CHARACTERS = 12_000_000;
 
 router.post('/', async (req: Request, res: Response) => {
   try {
@@ -38,6 +40,8 @@ router.post('/', async (req: Request, res: Response) => {
       });
     }
 
+    let totalCharacters = 0;
+
     const invalidFile = files.some((file) => {
       if (!file || typeof file !== 'object') {
         return true;
@@ -47,19 +51,46 @@ router.post('/', async (req: Request, res: Response) => {
         return true;
       }
 
-      return (
+      if (
         typeof file.name !== 'string' ||
         file.name.trim().length === 0 ||
-        typeof file.content !== 'string' ||
-        file.content.length > MAX_FILE_CHARACTERS
-      );
+        typeof file.content !== 'string'
+      ) {
+        return true;
+      }
+
+      const normalizedName = file.name.replace(/\\/g, '/');
+
+      const pathSegments = normalizedName.split('/');
+      if (
+        normalizedName.startsWith('/') ||
+        /^[a-z]:/i.test(normalizedName) ||
+        pathSegments.some((segment) => segment === '..' || segment === '.') ||
+        normalizedName.includes('\0')
+      ) {
+        return true;
+      }
+
+      const isPackageLock = /(^|\/)package-lock\.json$/i.test(normalizedName);
+
+      const maxCharacters = isPackageLock
+        ? MAX_PACKAGE_LOCK_CHARACTERS
+        : MAX_FILE_CHARACTERS;
+
+      if (file.content.length > maxCharacters) {
+        return true;
+      }
+
+      totalCharacters += file.content.length;
+
+      return totalCharacters > MAX_TOTAL_CHARACTERS;
     });
 
     if (invalidFile) {
       return res.status(400).json({
         success: false,
         message:
-          'Invalid repository file. Each file needs a name and string content no longer than 30,000 characters.',
+          'Invalid repository payload. Check file paths, per-file limits (200,000 characters; package-lock.json 5,000,000), and the 12,000,000-character total limit.',
       });
     }
 

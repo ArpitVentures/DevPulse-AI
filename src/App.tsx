@@ -5,7 +5,16 @@ import RepositoryDropzone, {
 } from './components/RepositoryDropzone';
 import SecurityEnvironment from './components/SecurityEnvironment';
 import ReactMarkdown from 'react-markdown';
-import type { RepositoryAnalysis } from './types/security';
+import type { RepositoryAnalysis, DependencySeverity } from './types/security';
+import Logo from './components/Logo';
+
+const rank: Record<DependencySeverity, number> = {
+  CRITICAL: 4,
+  HIGH: 3,
+  MEDIUM: 2,
+  LOW: 1,
+  UNKNOWN: 0,
+};
 
 function App() {
   const [engineStatus, setEngineStatus] =
@@ -51,6 +60,49 @@ function App() {
         (counts, result) => {
           if (result.severity === 'REVIEW' && result.findings.length === 0) {
             counts.review += 1;
+            return counts;
+          }
+
+          if (result.dependencyAudit?.success) {
+            const vulnerabilities = result.dependencyAudit.dependencies.flatMap(
+              (dependency) => dependency.vulnerabilities,
+            );
+
+            if (vulnerabilities.length > 0) {
+              const highestSeverity =
+                vulnerabilities.reduce<DependencySeverity>(
+                  (highest, vulnerability) => {
+                    return rank[vulnerability.severity] > rank[highest]
+                      ? vulnerability.severity
+                      : highest;
+                  },
+                  'UNKNOWN',
+                );
+
+              switch (highestSeverity) {
+                case 'CRITICAL':
+                  counts.critical += 1;
+                  break;
+                case 'HIGH':
+                  counts.high += 1;
+                  break;
+                case 'MEDIUM':
+                  counts.medium += 1;
+                  break;
+                case 'LOW':
+                  counts.low += 1;
+                  break;
+                default:
+                  counts.review += 1;
+              }
+
+              return counts;
+            }
+          }
+
+          if (result.findings.length === 0 && result.severity !== 'REVIEW') {
+            counts.low += 1;
+            return counts;
           }
 
           for (const finding of result.findings) {
@@ -92,7 +144,9 @@ function App() {
     <div className="app">
       <header className="app-header">
         <div>
-          <h1>DevPulse AI</h1>
+          <h1>
+            <Logo size={40} variant="full" />
+          </h1>
           <p>Autonomous Code Security</p>
         </div>
 
@@ -103,34 +157,39 @@ function App() {
       </header>
 
       <main className="main-content">
-        <SecurityEnvironment active={isScanning} status={engineStatus} />
+        <div className="hero-layout">
+          <motion.section
+            className="hero"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: 'easeOut' }}
+          >
+            <span className="eyebrow">AI-POWERED CODE SECURITY</span>
 
-        <motion.section
-          className="hero"
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: 'easeOut' }}
-        >
-          <span className="eyebrow">AI-POWERED CODE SECURITY</span>
+            <h2>
+              Find vulnerabilities
+              <br />
+              before they become incidents.
+            </h2>
 
-          <h2>
-            Find vulnerabilities
-            <br />
-            before they become incidents.
-          </h2>
+            <p>
+              Upload your repository and let DevPulse analyze your code,
+              research live security intelligence, and generate actionable
+              remediation.
+            </p>
 
-          <p>
-            Upload your repository and let DevPulse analyze your code, research
-            live security intelligence, and generate actionable remediation.
-          </p>
+            <div id="repository-scanner">
+              <RepositoryDropzone
+                onStatusChange={(status) => setEngineStatus(status)}
+                onAnalysisComplete={handleAnalysisComplete}
+              />
+            </div>
+          </motion.section>
 
-          <div id="repository-scanner">
-            <RepositoryDropzone
-              onStatusChange={(status) => setEngineStatus(status)}
-              onAnalysisComplete={handleAnalysisComplete}
-            />
-          </div>
-        </motion.section>
+          <aside className="hero-engine">
+            <SecurityEnvironment active={isScanning} status={engineStatus} />
+          </aside>
+        </div>
 
         {analysisResult && (
           <motion.section
@@ -283,6 +342,25 @@ function App() {
                             </div>
                           </div>
 
+                          {result.aiExplanation && (
+                            <div className="research-section">
+                              <div className="research-heading">
+                                <span className="result-label">
+                                  AI SECURITY EXPLANATION
+                                </span>
+                                <span className="tavily-badge">
+                                  NEBIUS · NEMOTRON
+                                </span>
+                              </div>
+
+                              <div className="research-answer">
+                                <ReactMarkdown>
+                                  {result.aiExplanation}
+                                </ReactMarkdown>
+                              </div>
+                            </div>
+                          )}
+
                           {result.research && (
                             <div className="research-section">
                               <div className="research-heading">
@@ -300,7 +378,6 @@ function App() {
                                   provide additional context and do not override
                                   those ratings.
                                 </p>
-
                               </div>
 
                               {result.research.answer && (

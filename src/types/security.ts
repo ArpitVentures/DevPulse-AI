@@ -1,9 +1,36 @@
 export type Severity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'REVIEW';
 
+export type DependencySeverity =
+  'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'UNKNOWN';
+
+export interface DependencyVulnerability {
+  id: string;
+  summary: string;
+  severity: DependencySeverity;
+  affectedVersions: string[];
+  fixedVersions: string[];
+  references: string[];
+}
+
+export interface AuditedDependency {
+  name: string;
+  version: string;
+  vulnerabilities: DependencyVulnerability[];
+}
+
+export interface DependencyAuditResult {
+  success: boolean;
+  vulnerabilitiesFound: number;
+  vulnerableDependencies: number;
+  dependencies: AuditedDependency[];
+  error?: string;
+}
+
 export interface FileAnalysis {
   filename: string;
   analysis: string;
   severity: Severity;
+  aiExplanation?: string;
   findings: Array<{
     ruleId: string;
     category: string;
@@ -14,6 +41,7 @@ export interface FileAnalysis {
     lines: number[];
     snippet: string;
   }>;
+  dependencyAudit?: DependencyAuditResult;
   research?: {
     query: string;
     answer: string;

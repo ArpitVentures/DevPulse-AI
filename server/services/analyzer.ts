@@ -6,6 +6,12 @@ import {
   type Detection,
   type Severity,
 } from './detectors';
+import { explainFindings } from './nebius';
+import {
+  auditNpmDependencies,
+  type DependencyAuditResult,
+  type DependencySeverity,
+} from './dependencyAudit';
 
 export type { Severity } from './detectors';
 
@@ -19,6 +25,8 @@ export interface FileAnalysis {
   analysis: string;
   severity: Severity | 'REVIEW';
   findings: Detection[];
+  dependencyAudit?: DependencyAuditResult;
+  aiExplanation?: string;
   research?: {
     query: string;
     answer: string;
@@ -35,8 +43,8 @@ export interface RepositoryAnalysis {
   results: FileAnalysis[];
 }
 
-const MAX_FILES = 20;
-const MAX_FILE_SIZE = 30_000;
+const MAX_FILES = 500;
+const MAX_FILE_SIZE = 200_000;
 const ANALYSIS_CONCURRENCY = 4;
 
 const IGNORED_DIRECTORIES = new Set([
@@ -201,7 +209,7 @@ function limitFileContent(content: string): {
 
 function buildCleanReport(filename: string, isTruncated = false): string {
   const truncationNotice = isTruncated
-    ? '\n\n> **Notice:** This file exceeded the 30,000-character limit. Only the initial portion was analyzed.'
+    ? '\n\n> **Notice:** This file exceeded the 200,000-character limit. Only the initial portion was analyzed.'
     : '';
 
   return `# Security Report
@@ -221,7 +229,6 @@ No known vulnerable code pattern was detected in ${filename} by the configured s
 - **Security impact:** No impact was established by this scan.
 
 - **Recommended remediation:** Continue following secure coding practices and review security-sensitive logic manually.
-
 
 ## Recommended Actions
 
@@ -259,24 +266,116 @@ Find relevant official security advisories, CWE or OWASP guidance, and remediati
 
 async function analyzeFile(file: RepositoryFile): Promise<FileAnalysis> {
   try {
+    const isPackageLock = /(^|\/)package-lock\.json$/i.test(
+      normalizePath(file.name),
+    );
+
     const { content, isTruncated } = limitFileContent(file.content);
     const detections = runDetectors(file.name, content);
 
+    let dependencyAudit: DependencyAuditResult | undefined;
+
+    if (isPackageLock) {
+      dependencyAudit = await auditNpmDependencies(file.content);
+    }
+
+    if (dependencyAudit && !dependencyAudit.success) {
+      return {
+        filename: file.name,
+        severity: 'REVIEW',
+        analysis:
+          `${buildFailedReport()}\n\n` +
+          `## Dependency Audit Status\n\n` +
+          `The npm dependency audit could not be completed: ` +
+          `${dependencyAudit.error ?? 'Unknown audit error'}\n\n` +
+          `Do not treat this result as a clean dependency scan.`,
+        findings: detections,
+        dependencyAudit,
+      };
+    }
+
+    const hasDependencyVulnerabilities =
+      dependencyAudit?.success === true &&
+      dependencyAudit.vulnerabilitiesFound > 0;
+
     if (detections.length === 0) {
+      if (hasDependencyVulnerabilities && dependencyAudit) {
+        const severityRank: Record<DependencySeverity, number> = {
+          CRITICAL: 4,
+          HIGH: 3,
+          MEDIUM: 2,
+          LOW: 1,
+          UNKNOWN: 0,
+        };
+
+        const vulnerableDependencies = dependencyAudit.dependencies.filter(
+          (dependency) => dependency.vulnerabilities.length > 0,
+        );
+
+        const dependencySeverity = vulnerableDependencies
+          .flatMap((dependency) => dependency.vulnerabilities)
+          .reduce<DependencySeverity>(
+            (highest, vulnerability) =>
+              severityRank[vulnerability.severity] > severityRank[highest]
+                ? vulnerability.severity
+                : highest,
+            'LOW',
+          );
+
+        const finalSeverity =
+          dependencySeverity === 'UNKNOWN' ? 'HIGH' : dependencySeverity;
+
+        const dependencySummary = vulnerableDependencies
+          .map((dependency) => {
+            return dependency.vulnerabilities
+              .map(
+                (vulnerability) =>
+                  `- **${vulnerability.id}** — ${vulnerability.severity}: ${vulnerability.summary}\n` +
+                  `  - Package: ${dependency.name}@${dependency.version}\n` +
+                  `  - Fixed versions: ${vulnerability.fixedVersions.join(', ') || 'Check advisory'}`,
+              )
+              .join('\n');
+          })
+          .join('\n\n');
+
+        return {
+          filename: file.name,
+          severity: finalSeverity,
+          analysis:
+            `# Dependency Security Report\n\n` +
+            `Found ${dependencyAudit.vulnerabilitiesFound} known vulnerability/vulnerabilities ` +
+            `across ${dependencyAudit.vulnerableDependencies} dependencies.\n\n` +
+            `## Vulnerabilities\n\n${dependencySummary}`,
+          findings: [],
+          dependencyAudit,
+        };
+      }
+
       return {
         filename: file.name,
         severity: 'LOW',
         analysis: buildCleanReport(file.name, isTruncated),
         findings: [],
+        ...(dependencyAudit ? { dependencyAudit } : {}),
       };
     }
 
     const severity = maxSeverity(detections) ?? 'LOW';
     const analysis = buildFindingsReport(file.name, detections, isTruncated);
 
-    const researchResult = await Promise.allSettled([
+    const [researchResult, explanationResult] = await Promise.allSettled([
       researchSecurityIssue(buildResearchQuery(file.name, detections)),
-    ]).then(([result]) => result);
+      explainFindings(
+        file.name,
+        content,
+        detections
+          .map(
+            (detection) =>
+              `- ${detection.title} (${detection.category}, ${detection.severity}): ${detection.snippet}`,
+          )
+          .join('\n'),
+      ),
+    ]);
 
     let research: FileAnalysis['research'];
 
@@ -300,12 +399,28 @@ async function analyzeFile(file: RepositoryFile): Promise<FileAnalysis> {
       );
     }
 
+    const aiExplanation =
+      explanationResult.status === 'fulfilled'
+        ? explanationResult.value
+        : undefined;
+
+    if (explanationResult.status === 'rejected') {
+      console.error(
+        `[DevPulse] Nebius explanation failed for ${file.name}:`,
+        explanationResult.reason instanceof Error
+          ? explanationResult.reason.message
+          : explanationResult.reason,
+      );
+    }
+
     return {
       filename: file.name,
       severity,
       analysis,
       findings: detections,
+      ...(dependencyAudit ? { dependencyAudit } : {}),
       ...(research ? { research } : {}),
+      ...(aiExplanation ? { aiExplanation } : {}),
     };
   } catch (error) {
     console.error(

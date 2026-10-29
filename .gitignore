@@ -27,3 +27,20 @@ dist-ssr
 .env
 .env.local
 .env.*.local
+
+# Environment secrets
+.env.*
+!.env.example
+
+# Private keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+
+# OS files
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp

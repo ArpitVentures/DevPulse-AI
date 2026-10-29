@@ -49,10 +49,9 @@ type DataTransferItemWithEntry = DataTransferItem & {
   webkitGetAsEntry?: () => unknown;
 };
 
-const MAX_FILES = 20;
-const MAX_FILE_CHARACTERS = 30_000;
+const MAX_FILES = 500;
 const MAX_REQUEST_BYTES = 14 * 1024 * 1024;
-const MAX_DIRECTORY_ENTRIES = 5000;
+const MAX_DIRECTORY_ENTRIES = 20_000;
 
 const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
@@ -503,7 +502,7 @@ function RepositoryDropzone({
       const repositoryFiles: RepositoryPayloadFile[] = [];
 
       for (const { file, path } of files) {
-        const content = (await file.text()).slice(0, MAX_FILE_CHARACTERS);
+        const content = await file.text();
 
         repositoryFiles.push({
           name: path,

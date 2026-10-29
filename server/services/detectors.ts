@@ -72,7 +72,8 @@ const RULES: Rule[] = [
       'Dynamic code evaluation and command execution can be dangerous when arguments contain untrusted input. A match alone does not prove arbitrary code execution.',
     remediation:
       'Avoid evaluating dynamically constructed code. Prefer safe APIs, validate untrusted input, and use fixed executable names and argument arrays when invoking processes.',
-    pattern: /\beval\s*\(|\bnew\s+Function\s*\(|\b(?:exec|execSync)\s*\(/gi,
+    pattern:
+      /(?<![\w$.])eval\s*\(|\bnew\s+Function\s*\(|(?<![\w$.])(?:exec|execSync)\s*\(/gi,
     appliesTo: (filename) => SOURCE_EXTENSIONS.test(filename),
   },
   {
@@ -110,7 +111,20 @@ const RULES: Rule[] = [
     remediation:
       'Remove credentials from log messages and redact sensitive values before logging.',
     pattern:
-      /\bconsole\s*\.\s*(?:log|error|warn|info|debug)\s*\([^)\r\n]{0,200}\b(?:password|passwd|secret|api[_-]?key|access[_-]?token|auth[_-]?token)\b/gi,
+      /\bconsole\s*\.\s*(?:log|error|warn|info|debug)\s*\(\s*(?:(?:"[^"\r\n]*"|'[^'\r\n]*'|`[^`\r\n]*`)\s*,\s*)?(?:password|passwd|secret|api[_-]?key|access[_-]?token|auth[_-]?token|resetToken|verificationToken)\b/gi,
+    appliesTo: (filename) => SOURCE_EXTENSIONS.test(filename),
+  },
+  {
+    id: 'log-user-object',
+    category: 'log_sensitive',
+    severity: 'MEDIUM',
+    title: 'Potential sensitive user object written to logs',
+    impact:
+      'Logging complete user or account objects may expose personal information, password hashes, tokens, or other sensitive fields, depending on the object contents.',
+    remediation:
+      'Avoid logging complete user or account objects. Log only explicitly approved, non-sensitive fields required for debugging.',
+    pattern:
+      /\bconsole\s*\.\s*(?:log|error|warn|info|debug)\s*\([^)\r\n]{0,200}(?:\buser\b\s*[,)]|\b(?:account|profile)\b\s*[,)]|\b(?:user|account|profile)\s*[,)]\s*[A-Za-z_$][\w$]*\b)/gi,
     appliesTo: (filename) => SOURCE_EXTENSIONS.test(filename),
   },
   {
@@ -195,7 +209,6 @@ export function runDetectors(filename: string, content: string): Detection[] {
 
     const hits = new Map<number, string>();
 
-    // Create a fresh regex so global matching has no shared lastIndex state.
     const pattern = new RegExp(rule.pattern.source, rule.pattern.flags);
 
     for (const match of content.matchAll(pattern)) {
@@ -208,6 +221,15 @@ export function runDetectors(filename: string, content: string): Detection[] {
       const startLine = getLineNumber(content, start);
       const endLine = getLineNumber(content, Math.max(start, end - 1));
       const sourceLine = lines[startLine - 1] ?? '';
+
+      const isRegexDefinition =
+        /^\s*(?:(?:const|let|var)\s+\w+\s*=\s*|pattern\s*:\s*)\/.*\/[dgimsuvy]*\s*[,;]?\s*$/.test(
+          sourceLine,
+        );
+
+      if (rule.id === 'unsafe-dom-injection' && isRegexDefinition) {
+        continue;
+      }
 
       if (isSuppressed(sourceLine, rule.id)) {
         continue;

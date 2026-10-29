@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "server": "tsx server/index.ts",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
@@ -17,13 +18,16 @@
     "prettier": "^3.9.5",
     "tsx": "^4.23.15",
     "typescript": "^6.0.3",
-    "vite": "^8.1.5"
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
   },
   "dependencies": {
+    "body-parser": "^2.4.0",
     "cors": "^2.8.6",
     "dotenv": "^18.0.5",
     "express": "^5.2.1",
     "framer-motion": "^14.0.0",
+    "qs": "^6.16.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-markdown": "^10.1.0"
