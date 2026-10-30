@@ -1,104 +1,167 @@
-
 # DevPulse AI
 ### Autonomous Code Security & Live Vulnerability Researcher
 
-DevPulse AI is an AI-powered code security analysis platform that helps developers identify potential vulnerabilities, detect risky coding patterns, audit dependencies, and research relevant security intelligence.
+**Find vulnerabilities before they become incidents.**
 
-By combining static code analysis, dependency auditing, live security research with Tavily, and AI-powered explanations using NVIDIA Nemotron through Nebius Token Factory, DevPulse AI helps developers understand potential security risks and explore possible remediation strategies.
+DevPulse AI is an AI-powered code security analysis platform that helps developers identify potential vulnerabilities, detect risky coding patterns, audit dependencies, research live security intelligence, and generate actionable remediation guidance.
 
-## 🚀 Key Features
+By combining custom static security analysis, dependency auditing, Tavily-powered security research, and NVIDIA Nemotron through Nebius Token Factory, DevPulse AI brings multiple security intelligence capabilities into one unified developer-focused workflow.
 
-- **Static Security Analysis** — Scan source files for potentially dangerous coding patterns and security issues.
-- **Dependency Auditing** — Analyze project dependencies to identify known security risks where supported by the available audit data.
-- **AI-Powered Explanations** — Generate contextual security explanations and remediation guidance using NVIDIA Nemotron.
-- **Live Security Research** — Use Tavily to retrieve relevant security intelligence and supporting web sources.
-- **Repository Upload** — Upload project files through the web interface for analysis.
-- **File-Level Findings** — Review findings, severity levels, and security explanations for analyzed files.
-- **Test Coverage** — Automated tests for security detectors and dependency auditing.
-- **Resilient Analysis** — AI explanation and live research failures are handled without automatically stopping the core analysis.
+**[Live Demo](https://devpulse-ai-iz95.onrender.com) · [GitHub Repository](https://github.com/ArpitVentures/DevPulse-AI)**
 
-## 🧠 How It Works
+---
 
-1. **Upload** — Provide source code through the DevPulse AI interface.
-2. **Analyze** — Static security detectors inspect files for suspicious patterns.
-3. **Audit** — The dependency auditing service evaluates supported dependency information.
-4. **Research** — Tavily searches for relevant security intelligence.
-5. **Explain** — NVIDIA Nemotron generates an AI-assisted explanation of detected issues.
-6. **Review** — Explore the results and use the supporting information to investigate potential fixes.
+## Project Preview
 
-## 🛠️ Technology Stack
+![DevPulse AI Dashboard](docs/assets/devpulse-dashboard.png)
+
+*DevPulse AI — AI-powered security analysis interface with repository upload and GitHub import.*
+
+---
+
+## Security Intelligence Dashboard
+
+The Security Intelligence dashboard provides a consolidated view of repository scan results, including vulnerability severity distribution, analyzed files, and security findings.
+
+![DevPulse AI Security Intelligence Dashboard](docs/assets/vulnerability-summary.png)
+
+*Security scan overview highlighting vulnerability severity classifications and file-level analysis results.*
+
+---
+
+## Key Features
+
+- **Static Security Analysis** — Scan source files for potentially dangerous coding patterns and security issues using custom static security detectors.
+- **GitHub Repository Import** — Import public GitHub repositories directly through their repository URL without manually downloading source code.
+- **Local Repository Upload** — Upload complete project folders or select multiple individual source files for analysis.
+- **Dependency Auditing** — Analyze supported dependency information to identify known security risks.
+- **Live Vulnerability Research** — Use Tavily Search API to retrieve relevant security intelligence and supporting sources.
+- **AI-Powered Explanations** — Leverage NVIDIA Nemotron to generate contextual security explanations and remediation recommendations.
+- **Security Intelligence Dashboard** — Explore file-level reports, severity classifications, findings, and recommended actions.
+- **Resilient Analysis** — Handle AI and live research failures without automatically interrupting core static analysis.
+
+---
+
+## How It Works
+
+DevPulse AI follows a multi-stage security analysis pipeline:
+
+1. **Repository Input** — Upload a local project, select individual files, or provide a public GitHub repository URL.
+2. **Repository Processing** — Collect supported source files while excluding sensitive and unsupported content.
+3. **Static Analysis** — Inspect source code for potentially dangerous coding patterns.
+4. **Dependency Intelligence** — Audit supported package information for known security risks.
+5. **Live Security Research** — Retrieve relevant vulnerability intelligence through Tavily.
+6. **AI-Powered Explanation** — Use NVIDIA Nemotron to explain findings and suggest possible remediation strategies.
+7. **Security Reporting** — Present analysis results through file-level security reports and the dashboard.
+
+---
+
+## Technology Stack
 
 | Component | Technology |
 |---|---|
 | Frontend | React, TypeScript, Vite |
-| Backend | Node.js, Express, TypeScript |
-| Security Analysis | Custom static security detectors |
-| Dependency Analysis | Custom dependency auditing service |
-| AI Inference | NVIDIA Nemotron via Nebius Token Factory |
+| Backend | Node.js, Express.js, TypeScript |
+| Static Analysis | Custom Security Detectors |
+| Dependency Analysis | Custom Dependency Auditing |
+| AI Model | NVIDIA Nemotron |
+| AI Infrastructure | Nebius Token Factory |
 | Security Research | Tavily Search API |
-| Testing | Automated service and detector tests |
-| Version Control | Git and GitHub |
+| Version Control | Git, GitHub |
+| Deployment | Render |
+| Testing | Automated Detector and Service Tests |
 
-## ⚙️ Getting Started
+---
+
+## Installation & Setup
 
 ### Prerequisites
 
 - Node.js and npm
-- A Nebius Token Factory API key for AI-powered explanations
-- A Tavily API key for live security research
+- Nebius Token Factory API key
+- Tavily API key
 
-### Installation
+### Clone the Repository
 
-Clone the repository:
+Clone the project and navigate to its directory:
 
 ```bash
 git clone https://github.com/ArpitVentures/DevPulse-AI.git
 cd DevPulse-AI
+```
+
+### Install Dependencies
+
+```bash
 npm install
 ```
 
-### Environment Variables
+### Environment Configuration
 
-Create a local `.env` file in the project root and configure the required API credentials:
+Create a `.env` file in the project root and configure your API credentials:
 
 ```env
 NEBIUS_API_KEY=your_nebius_api_key
 TAVILY_API_KEY=your_tavily_api_key
 ```
 
-Never commit your `.env` file or expose API keys in public repositories.
+Never commit your `.env` file or expose API credentials in a public repository.
 
 ### Run Locally
 
-Start the application using the development scripts configured in `package.json`. Check the available scripts before choosing the appropriate frontend and backend commands.
-
-## 🧪 Testing
-
-Run the project's automated tests using the test script configured in `package.json`.
-
-The repository includes tests for:
-- Static security detectors
-- Dependency auditing
-
-## 🔐 Security & Limitations
-
-DevPulse AI is a security analysis aid, not a replacement for a comprehensive security review.
-
-- Static detection may produce false positives or miss vulnerabilities.
-- Dependency audit coverage depends on available package metadata and vulnerability information.
-- AI-generated explanations and suggested fixes should be independently verified.
-- Live research depends on API availability, network access, and provider limits.
-- Do not upload sensitive production code, credentials, or confidential data unless you are authorized to do so.
-
-## 🎯 Project Goal
-
-The goal of DevPulse AI is to make code security analysis more accessible by combining automated detection, live vulnerability research, and AI-assisted explanations in one developer-focused workflow.
-
-## 👨‍💻 Author
-
-**Arpit Srivastava**  
-GitHub: [@ArpitVentures](https://github.com/ArpitVentures)
+Start the frontend and backend using the development scripts configured in `package.json`.
 
 ---
 
-*Built for the Nebius × NVIDIA Global AI Hackathon.*
+## Testing
+
+The project includes automated tests covering:
+
+- Static security detectors.
+- Dependency auditing.
+- Relevant analysis services.
+
+Run the test script configured in `package.json` to execute the available tests.
+
+---
+
+## Security & Limitations
+
+DevPulse AI is a security analysis aid, not a replacement for comprehensive security audits, penetration testing, or manual code review.
+
+- Static detection may produce false positives or miss vulnerabilities.
+- Dependency audit coverage depends on available package metadata and vulnerability information.
+- AI-generated explanations and remediation suggestions should be independently verified.
+- Live research depends on API availability, network connectivity, and provider limits.
+- GitHub import currently supports public repositories only.
+- Repository analysis is subject to file-count and content-size limits.
+- Sensitive files and unsupported formats are excluded from processing.
+
+---
+
+## Project Goal
+
+The goal of DevPulse AI is to make code security analysis more accessible by combining automated detection, dependency intelligence, live vulnerability research, and AI-assisted explanations into a unified developer-focused workflow.
+
+DevPulse AI aims not only to identify potentially risky code, but also to help developers understand security concerns and investigate actionable remediation strategies.
+
+---
+
+## Author
+
+**Arpit Srivastava**
+
+- GitHub: [@ArpitVentures](https://github.com/ArpitVentures)
+- Project: [DevPulse AI](https://github.com/ArpitVentures/DevPulse-AI)
+
+---
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+---
+
+<p align="center">
+  **Built for the Nebius × NVIDIA Global AI Hackathon.**
+</p>
