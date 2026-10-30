@@ -329,6 +329,10 @@ function RepositoryDropzone({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isReadingDrop, setIsReadingDrop] = useState(false);
   const [error, setError] = useState('');
+  const [githubUrl, setGithubUrl] = useState('');
+  const [isGithubImport, setIsGithubImport] = useState(false);
+
+  const busy = isAnalyzing || isReadingDrop || isGithubImport;
 
   const handleSelectedFiles = (selectedFiles: SelectedRepositoryFile[]) => {
     const repositoryFiles = selectedFiles.filter(({ path }) =>
@@ -379,13 +383,13 @@ function RepositoryDropzone({
   };
 
   const handleBrowseFolder = () => {
-    if (!isAnalyzing && !isReadingDrop) {
+    if (!busy) {
       folderInputRef.current?.click();
     }
   };
 
   const handleBrowseFiles = () => {
-    if (!isAnalyzing && !isReadingDrop) {
+    if (!busy) {
       filesInputRef.current?.click();
     }
   };
@@ -393,7 +397,7 @@ function RepositoryDropzone({
   const handleDragEnter = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
 
-    if (isAnalyzing || isReadingDrop) return;
+    if (busy) return;
 
     dragCounter.current += 1;
     setIsDragging(true);
@@ -402,7 +406,7 @@ function RepositoryDropzone({
   const handleDragLeave = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
 
-    if (isAnalyzing || isReadingDrop) return;
+    if (busy) return;
 
     dragCounter.current -= 1;
 
@@ -415,7 +419,7 @@ function RepositoryDropzone({
   const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
 
-    if (!isAnalyzing && !isReadingDrop) {
+    if (!busy) {
       event.dataTransfer.dropEffect = 'copy';
     }
   };
@@ -426,7 +430,7 @@ function RepositoryDropzone({
     dragCounter.current = 0;
     setIsDragging(false);
 
-    if (isAnalyzing || isReadingDrop) return;
+    if (busy) return;
 
     setError('');
 
@@ -490,8 +494,69 @@ function RepositoryDropzone({
     handleFiles(droppedFiles);
   };
 
+  const handleGithubImport = async () => {
+    if (busy) return;
+
+    const trimmedUrl = githubUrl.trim();
+
+    try {
+      const parsedUrl = new URL(trimmedUrl);
+
+      if (
+        parsedUrl.protocol !== 'https:' ||
+        parsedUrl.hostname !== 'github.com' ||
+        parsedUrl.port ||
+        parsedUrl.search ||
+        parsedUrl.hash ||
+        parsedUrl.username ||
+        parsedUrl.password ||
+        !/^\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/?$/.test(parsedUrl.pathname)
+      ) {
+        throw new Error('Enter a valid public GitHub repository URL.');
+      }
+
+      setIsGithubImport(true);
+      setError('');
+      onAnalysisStart?.();
+      onStatusChange?.('ANALYZING REPOSITORY');
+
+      const response = await fetch(`${API_BASE_URL}/api/analyze`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          githubUrl: trimmedUrl,
+        }),
+      });
+
+      const data = (await response.json()) as RepositoryAnalysis & {
+        message?: string;
+      };
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message || `GitHub import failed (${response.status}).`,
+        );
+      }
+
+      onStatusChange?.('SCAN COMPLETE');
+      onAnalysisComplete(data);
+    } catch (importError) {
+      setError(
+        importError instanceof Error
+          ? importError.message
+          : 'Unable to import GitHub repository.',
+      );
+
+      onStatusChange?.('ENGINE READY');
+    } finally {
+      setIsGithubImport(false);
+    }
+  };
+
   const analyzeRepository = async () => {
-    if (files.length === 0 || isAnalyzing || isReadingDrop) return;
+    if (files.length === 0 || busy) return;
 
     try {
       setIsAnalyzing(true);
@@ -554,8 +619,6 @@ function RepositoryDropzone({
       setIsAnalyzing(false);
     }
   };
-
-  const busy = isAnalyzing || isReadingDrop;
 
   return (
     <div
@@ -620,25 +683,29 @@ function RepositoryDropzone({
       </div>
 
       <h3>
-        {isAnalyzing
-          ? 'Analyzing repository...'
-          : isReadingDrop
-            ? 'Reading dropped files...'
-            : isDragging
-              ? 'Release to add files'
-              : files.length > 0
-                ? `${files.length} source files ready`
-                : 'Drop your repository here'}
+        {isGithubImport
+          ? 'Importing GitHub repository...'
+          : isAnalyzing
+            ? 'Analyzing repository...'
+            : isReadingDrop
+              ? 'Reading dropped files...'
+              : isDragging
+                ? 'Release to add files'
+                : files.length > 0
+                  ? `${files.length} source files ready`
+                  : 'Drop your repository here'}
       </h3>
 
       <p>
-        {isAnalyzing
-          ? 'DevPulse is analyzing your code and security posture.'
-          : isReadingDrop
-            ? 'Collecting supported files and excluding ignored paths.'
-            : files.length > 0
-              ? 'Selection ready. You can scan it or choose a different selection.'
-              : 'Drop a project folder or multiple source files. Sensitive files and unsupported formats are excluded.'}
+        {isGithubImport
+          ? 'Fetching repository files from GitHub. This may take a moment.'
+          : isAnalyzing
+            ? 'DevPulse is analyzing your code and security posture.'
+            : isReadingDrop
+              ? 'Collecting supported files and excluding ignored paths.'
+              : files.length > 0
+                ? 'Selection ready. You can scan it or choose a different selection.'
+                : 'Drop a project folder or multiple source files. Sensitive files and unsupported formats are excluded.'}
       </p>
 
       {!busy && files.length === 0 && (
@@ -658,6 +725,38 @@ function RepositoryDropzone({
           >
             Select Individual Files
           </button>
+        </div>
+      )}
+
+      {!busy && files.length === 0 && (
+        <div className="github-import">
+          <div className="github-import-divider">OR IMPORT FROM GITHUB</div>
+
+          <div className="github-import-row">
+            <input
+              type="url"
+              className="github-import-input"
+              placeholder="https://github.com/owner/repository"
+              value={githubUrl}
+              onChange={(event) => setGithubUrl(event.target.value)}
+              disabled={busy}
+              aria-label="Public GitHub repository URL"
+            />
+
+            <button
+              type="button"
+              className="github-import-button"
+              onClick={handleGithubImport}
+              disabled={!githubUrl.trim() || busy}
+            >
+              {isGithubImport ? 'Importing...' : 'Import'}
+            </button>
+          </div>
+
+          <p className="github-import-hint">
+            Import a public GitHub repository directly. Private repositories are
+            not supported.
+          </p>
         </div>
       )}
 
@@ -694,9 +793,11 @@ function RepositoryDropzone({
       {busy && (
         <div className="analysis-status" role="status" aria-live="polite">
           <span className="analysis-spinner" />
-          {isReadingDrop
-            ? 'Reading dropped files...'
-            : 'Running security analysis...'}
+          {isGithubImport
+            ? 'Importing GitHub repository...'
+            : isReadingDrop
+              ? 'Reading dropped files...'
+              : 'Running security analysis...'}
         </div>
       )}
 

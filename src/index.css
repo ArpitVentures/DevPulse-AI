@@ -1637,3 +1637,92 @@ button:focus-visible {
         grid-template-columns: 1fr;
     }
 }
+
+.github-import {
+    width: 100%;
+    max-width: 440px;
+    margin-top: 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+}
+
+.github-import-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    color: rgba(245, 245, 245, 0.38);
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+}
+
+.github-import-divider::before,
+.github-import-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(245, 245, 245, 0.12);
+}
+
+.github-import-row {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+}
+
+.github-import-input {
+    flex: 1;
+    min-width: 0;
+    padding: 12px 14px;
+    border: 1px solid rgba(245, 245, 245, 0.16);
+    border-radius: 8px;
+    outline: none;
+    background: var(--graphite);
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+}
+
+.github-import-input:focus {
+    border-color: var(--lime-spark);
+    box-shadow: 0 0 0 2px rgba(182, 255, 46, 0.08);
+}
+
+.github-import-input::placeholder {
+    color: rgba(245, 245, 245, 0.35);
+}
+
+.github-import-button {
+    padding: 11px 16px;
+    border: 1px solid var(--lime-spark);
+    border-radius: 8px;
+    background: var(--lime-spark);
+    color: var(--night-violet);
+    font-size: 0.82rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.github-import-button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.github-import-hint {
+    margin: 0 !important;
+    font-size: 0.72rem !important;
+    color: rgba(245, 245, 245, 0.42) !important;
+}
+
+@media (max-width: 480px) {
+    .github-import-row {
+        flex-direction: column;
+    }
+
+    .github-import-button {
+        width: 100%;
+    }
+}
